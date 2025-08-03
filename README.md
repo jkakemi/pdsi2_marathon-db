@@ -111,5 +111,5 @@ The API is structured around REST principles. Currently, the following endpoint 
 
 ## 🙏 Acknowledgments
 
-* Project for the "Information Systems Project and Development" course.
+* Project for the "Information Systems Project and Development II" course.
 * Federal of Uberlândia University

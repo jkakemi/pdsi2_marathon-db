@@ -25,7 +25,8 @@ public class Submission {
 
     private LocalDateTime submissionTime;
 
-    private String sourceSubmissionId;
+    @Column(unique = true)
+    private Long sourceSubmissionId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)

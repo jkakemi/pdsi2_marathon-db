@@ -21,12 +21,17 @@ public class Problem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    private String title;
+
     @Column(nullable = false, unique = true)
     private String problemUrl;
     private String source; // CodeForces, beecrowd
     private String difficulty;
     private Integer solvedCount = 0;
     private LocalDateTime lastUpdate;
+    private Integer contestId;
+    private String problemIndex;
 
     @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL)
     private List<Submission> submissions;
@@ -39,4 +44,5 @@ public class Problem {
     )
 
     private Set<Topic> topics;
+
 }

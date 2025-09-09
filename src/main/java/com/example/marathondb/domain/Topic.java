@@ -1,11 +1,12 @@
 package com.example.marathondb.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
 import java.util.Set;
 
+@Getter
+@Setter
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,5 +22,6 @@ public class Topic {
     private String name;
 
     @ManyToMany(mappedBy = "topics")
+    @ToString.Exclude
     private Set<Problem> problems;
 }

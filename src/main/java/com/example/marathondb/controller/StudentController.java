@@ -1,10 +1,7 @@
 package com.example.marathondb.controller;
 
 import com.example.marathondb.domain.Student;
-import com.example.marathondb.dto.StudentRegistrationDTO;
-import com.example.marathondb.dto.StudentResponseDTO;
-import com.example.marathondb.dto.SubmissionResponseDTO;
-import com.example.marathondb.dto.UserStatisticsDTO;
+import com.example.marathondb.dto.*;
 import com.example.marathondb.repository.StudentRepository;
 import com.example.marathondb.service.CodeforcesService;
 import com.example.marathondb.service.StudentService;
@@ -70,5 +67,12 @@ public class StudentController {
         String userEmail = authentication.getName();
         UserStatisticsDTO statistics = studentService.getStatisticsForStudent(userEmail);
         return ResponseEntity.ok(statistics);
+    }
+
+    @PutMapping("/me/profile")
+    public ResponseEntity<UserProfileResponseDTO> updateUserProfile(Authentication authentication, @RequestBody UserProfileUpdateDTO dto) {
+        String userEmail = authentication.getName();
+        UserProfileResponseDTO updatedProfile = studentService.updateUserProfile(userEmail, dto);
+        return ResponseEntity.ok(updatedProfile);
     }
 }

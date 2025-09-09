@@ -32,6 +32,7 @@ public class Problem {
     private LocalDateTime lastUpdate;
     private Integer contestId;
     private String problemIndex;
+    private Integer rating;
 
     @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL)
     private List<Submission> submissions;

@@ -53,6 +53,35 @@ public class StudentService {
         return mapToStudentResponseDTO(savedStudent);
     }
 
+    @Transactional
+    public UserProfileResponseDTO updateUserProfile(String userEmail, UserProfileUpdateDTO dto) {
+        Student student = studentRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+
+        UserProfile profile = student.getUserProfile();
+        profile.setLearningGoal(dto.getLearningGoal());
+        profile.setLearningStyle(dto.getLearningStyle());
+        profile.setTimeCommitment(dto.getTimeCommitment());
+        profile.setCurrentPeriod(dto.getCurrentPeriod());
+
+        userProfileRepository.save(profile);
+
+        UserProfile savedProfile = userProfileRepository.save(profile);
+
+        return mapToUserProfileResponseDTO(savedProfile);
+    }
+
+    private UserProfileResponseDTO mapToUserProfileResponseDTO(UserProfile profile) {
+        UserProfileResponseDTO dto = new UserProfileResponseDTO();
+        dto.setId(profile.getId());
+        dto.setLearningGoal(profile.getLearningGoal());
+        dto.setLearningStyle(profile.getLearningStyle());
+        dto.setTimeCommitment(profile.getTimeCommitment());
+        dto.setCurrentPeriod(profile.getCurrentPeriod());
+        return dto;
+    }
+
+
     private StudentResponseDTO mapToStudentResponseDTO(Student student) {
         StudentResponseDTO responseDTO = new StudentResponseDTO();
         responseDTO.setId(student.getId());

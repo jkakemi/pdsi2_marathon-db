@@ -1,6 +1,8 @@
 package com.example.marathondb.config;
 
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
+import com.google.genai.Client;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -11,6 +13,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.client.RestTemplate;
+
+import javax.swing.*;
 
 @Configuration
 @EnableWebSecurity
@@ -26,7 +30,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/students")
+                        .requestMatchers("/api/auth/**", "/api/students", "/api/ingestion/**")
                         .permitAll()
                         .anyRequest()
                         .authenticated()
@@ -42,4 +46,5 @@ public class SecurityConfig {
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
+
 }

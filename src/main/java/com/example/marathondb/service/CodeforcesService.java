@@ -3,10 +3,12 @@ package com.example.marathondb.service;
 import com.example.marathondb.domain.Problem;
 import com.example.marathondb.domain.Student;
 import com.example.marathondb.domain.Submission;
+import com.example.marathondb.domain.Topic;
 import com.example.marathondb.dto.CodeforcesApiResponseDTO;
 import com.example.marathondb.dto.CodeforcesSubmissionDTO;
 import com.example.marathondb.repository.ProblemRepository;
 import com.example.marathondb.repository.SubmissionRepository;
+import com.example.marathondb.repository.TopicRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.TimeZone;
 
 @Service
@@ -23,6 +27,7 @@ public class CodeforcesService {
     private final RestTemplate restTemplate;
     private final ProblemRepository problemRepository;
     private final SubmissionRepository submissionRepository;
+    private final TopicRepository topicRepository;
 
     private final String CODEFORCES_API_URL = "https://codeforces.com/api/user.status?handle=";
 
@@ -45,12 +50,27 @@ public class CodeforcesService {
                                 newProblem.setContestId(subDto.getProblem().getContestId());
                                 newProblem.setProblemIndex(subDto.getProblem().getIndex());
                                 newProblem.setTitle(subDto.getProblem().getName());
+                                newProblem.setRating(subDto.getProblem().getRating());
 
                                 String url = String.format("https://codeforces.com/problemset/problem/%d/%s",
                                         subDto.getProblem().getContestId(), subDto.getProblem().getIndex());
                                 newProblem.setProblemUrl(url);
-
                                 newProblem.setSource("Codeforces");
+
+                                Set<Topic> topicsForProblem = new HashSet<>();
+                                if (subDto.getProblem().getTags() != null) {
+                                    for (String tagName : subDto.getProblem().getTags()) {
+                                        Topic topic = topicRepository.findByName(tagName)
+                                                .orElseGet(() -> {
+                                                    Topic newTopic = new Topic();
+                                                    newTopic.setName(tagName);
+                                                    return topicRepository.save(newTopic);
+                                                });
+                                        topicsForProblem.add(topic);
+                                    }
+                                }
+                                newProblem.setTopics(topicsForProblem);
+
                                 return problemRepository.save(newProblem);
                             });
 

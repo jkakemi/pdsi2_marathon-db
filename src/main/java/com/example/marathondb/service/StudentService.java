@@ -86,7 +86,7 @@ public class StudentService {
         StudentResponseDTO responseDTO = new StudentResponseDTO();
         responseDTO.setId(student.getId());
         responseDTO.setEmail(student.getEmail());
-        responseDTO.setUsername(student.getUsername());
+        responseDTO.setUsername(student.getRealUsername());
         responseDTO.setHandles(student.getHandles());
         responseDTO.setCreatedAt(student.getCreatedAt());
 
@@ -143,6 +143,12 @@ public class StudentService {
                 .build();
     }
 
+    public UserProfileResponseDTO getUserProfile(String userEmail) {
+        Student student = studentRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+        return mapToUserProfileResponseDTO(student.getUserProfile());
+    }
+
     private SubmissionResponseDTO mapToSubmissionResponseDTO(Submission submission) {
         SubmissionResponseDTO dto = new SubmissionResponseDTO();
         dto.setId(submission.getId());
@@ -157,5 +163,42 @@ public class StudentService {
 
         dto.setProblem(problemDto);
         return dto;
+    }
+
+    public StudentResponseDTO getStudentDetails(String userEmail) {
+        Student student = studentRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+        return mapToStudentResponseDTO(student);
+    }
+
+    @Transactional
+    public StudentResponseDTO updateStudent(String currentUserEmail, StudentUpdateDTO dto) {
+        Student student = studentRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+
+        if (dto.getUsername() != null && !dto.getUsername().isBlank()) {
+            if (!student.getUsername().equals(dto.getUsername()) && studentRepository.findByUsername(dto.getUsername()).isPresent()) {
+                throw new IllegalStateException("Username já está em uso.");
+            }
+            student.setUsername(dto.getUsername());
+        }
+
+        if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
+            if (!student.getEmail().equals(dto.getEmail()) && studentRepository.findByEmail(dto.getEmail()).isPresent()) {
+                throw new IllegalStateException("Email já está em uso.");
+            }
+            student.setEmail(dto.getEmail());
+        }
+
+        if (dto.getHandles() != null && !dto.getHandles().isBlank()) {
+            student.setHandles(dto.getHandles());
+        }
+
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            student.setPassword(passwordEncoder.encode(dto.getPassword()));
+        }
+
+        Student updatedStudent = studentRepository.save(student);
+        return mapToStudentResponseDTO(updatedStudent);
     }
 }

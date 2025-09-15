@@ -56,7 +56,7 @@ public class RecommendationService {
 
         StudyPlan newStudyPlan = new StudyPlan();
         newStudyPlan.setStudent(student);
-        newStudyPlan.setTitle("Roteiro de Estudos Inicial - Gerado por IA");
+        newStudyPlan.setTitle("Roteiro de Estudos de Programação Competitiva");
         newStudyPlan.setContent(aiResponse);
         newStudyPlan.setActive(true);
 
@@ -66,7 +66,6 @@ public class RecommendationService {
 
     @Transactional
     public List<ProblemSummaryDTO> recommendProblems(String userEmail) {
-
         Student student = studentRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
         List<Submission> submissions = student.getSubmissions();
@@ -80,58 +79,62 @@ public class RecommendationService {
                 .flatMap(s -> s.getProblem().getTopics().stream())
                 .map(Topic::getName)
                 .collect(Collectors.groupingBy(name -> name, Collectors.counting()))
-                .entrySet().stream()
-                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .limit(3)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
+                .entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(3).map(Map.Entry::getKey).collect(Collectors.toSet());
 
         if (weakTopicNames.isEmpty()) {
             weakTopicNames = submissions.stream()
                     .flatMap(s -> s.getProblem().getTopics().stream())
                     .map(Topic::getName)
-                    .limit(5)
-                    .collect(Collectors.toSet());
-            if(weakTopicNames.isEmpty()) {
-                return List.of();
-            }
+                    .limit(5).collect(Collectors.toSet());
         }
 
         List<Problem> cfCandidates = problemRepository.findRandomUnsolvedProblemsBySource(student.getId(), "Codeforces", 25);
         List<Problem> uvaCandidates = problemRepository.findRandomUnsolvedProblemsBySource(student.getId(), "UVa Online Judge", 25);
-
         List<Problem> candidateProblems = new ArrayList<>(cfCandidates);
         candidateProblems.addAll(uvaCandidates);
         Collections.shuffle(candidateProblems);
-
-        if (candidateProblems.isEmpty()) {
-            return List.of();
-        }
 
         String problemCatalogForAI = candidateProblems.stream()
                 .map(p -> String.format("{\"id\": %d, \"title\": \"%s\", \"rating\": %d, \"source\": \"%s\"}",
                         p.getId(), p.getTitle().replace("\"", "'"), p.getRating(), p.getSource()))
                 .collect(Collectors.joining(",\n"));
 
-        String prompt = String.format(
-                """
-                Você é um tutor de programação. Um estudante tem dificuldade nos tópicos: [%s].
-                Abaixo está um catálogo de problemas que ele não resolveu.
-                
-                CATÁLOGO:
-                [%s]
-        
-                Sua tarefa é selecionar 8 problemas deste catálogo. Seja criativo e diversificado na sua seleção para criar uma lista de prática interessante e variada.
-                Sua resposta DEVE SER APENAS um array JSON de objetos, onde cada objeto tem a chave "problemId".
-                Exemplo de resposta: [{"problemId": 15}, {"problemId": 2}]
-                """,
-                String.join(", ", weakTopicNames),
-                problemCatalogForAI
-        );
+        String prompt;
+        if (weakTopicNames.isEmpty()) {
+            prompt = String.format(
+                    """
+                    Você é um tutor de programação. Abaixo está um catálogo de problemas que um estudante não resolveu.
+                    
+                    CATÁLOGO:
+                    [%s]
+            
+                    Sua tarefa é selecionar 8 problemas deste catálogo. Crie uma lista de prática interessante e com dificuldade variada.
+                    Sua resposta DEVE SER APENAS um array JSON de objetos, onde cada objeto tem a chave "problemId".
+                    Exemplo de resposta: [{"problemId": 15}, {"problemId": 2}]
+                    """,
+                    problemCatalogForAI
+            );
+        } else {
+            prompt = String.format(
+                    """
+                    Você é um tutor de programação. Um estudante tem dificuldade nos tópicos: [%s].
+                    Abaixo está um catálogo de problemas que ele não resolveu.
+                    
+                    CATÁLOGO:
+                    [%s]
+            
+                    Sua tarefa é selecionar 8 problemas deste catálogo para ajudar o estudante a praticar seus pontos fracos.
+                    Sua resposta DEVE SER APENAS um array JSON de objetos, onde cada objeto tem a chave "problemId".
+                    Exemplo de resposta: [{"problemId": 15}, {"problemId": 2}]
+                    """,
+                    String.join(", ", weakTopicNames),
+                    problemCatalogForAI
+            );
+        }
 
-        String aiResponseJson;
         try {
-            aiResponseJson = ollamaService.callOllama(MODEL_NAME, prompt);
+            String aiResponseJson = ollamaService.callOllama(MODEL_NAME, prompt);
 
             if (aiResponseJson.trim().startsWith("```json")) {
                 aiResponseJson = aiResponseJson.substring(aiResponseJson.indexOf('['));
@@ -149,7 +152,6 @@ public class RecommendationService {
             return recommendedProblems.stream()
                     .map(this::mapToProblemSummaryDTO)
                     .collect(Collectors.toList());
-
         } catch (Exception e) {
             e.printStackTrace();
             return List.of();
@@ -176,6 +178,32 @@ public class RecommendationService {
             dto.setTags(problem.getTopics().stream().map(Topic::getName).collect(Collectors.toSet()));
         }
         return dto;
+    }
+
+    public List<StudyPlanResponseDTO> getStudyPlansForUser(String userEmail) {
+        Student student = studentRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+
+        List<StudyPlan> plans = studyPlanRepository.findByStudentIdOrderByCreatedAtDesc(student.getId());
+
+        return plans.stream()
+                .map(this::mapToStudyPlanResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void deleteStudyPlan(Long planId, String userEmail) {
+        Student student = studentRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+
+        StudyPlan plan = studyPlanRepository.findById(planId)
+                .orElseThrow(() -> new RuntimeException("Plano de estudos não encontrado"));
+
+        if (!plan.getStudent().getId().equals(student.getId())) {
+            throw new SecurityException("Você não tem permissão para excluir este plano.");
+        }
+
+        studyPlanRepository.deleteById(planId);
     }
 
     @Data

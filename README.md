@@ -18,8 +18,8 @@ This backend is the foundation of the platform, responsible for data management,
 * **Data Aggregation:** System architecture designed to integrate with web scrapers to fetch user submission data.
 * **Relational Data Model:** Robust PostgreSQL database schema to store students, problems, topics, and submissions.
 * **RESTful API:** A clean and well-structured API built with Spring Boot.
-* **(In Progress) AI Recommendation Engine:** Future integration with LLMs (via Ollama) to provide intelligent recommendations.
-* **(In Progress) Personalized Study Plans:** Logic to generate and manage study paths for users.
+* **AI Recommendation Engine:** Future integration with LLMs (via Ollama) to provide intelligent recommendations.
+* **Personalized Study Plans:** Logic to generate and manage study paths for users.
 
 ## 🛠️ Built With
 

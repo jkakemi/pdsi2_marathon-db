@@ -59,7 +59,7 @@ public class IngestionService {
 
             try {
                 if (i + BATCH_SIZE < untaggedProblems.size()) {
-                    System.out.println("5 segundos para evitar limite de taxa...");
+                    System.out.println("5 segundos para evitar limite de taxa.");
                     Thread.sleep(5000);
                 }
             } catch (InterruptedException e) {

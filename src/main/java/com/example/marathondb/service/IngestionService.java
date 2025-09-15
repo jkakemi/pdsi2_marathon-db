@@ -28,16 +28,19 @@ public class IngestionService {
     @Transactional
     public void ingestProblems(List<ProblemIngestionDTO> problemDtos) {
         for (ProblemIngestionDTO dto : problemDtos) {
-            String problemUrl = "https://onlinejudge.org/external/" + dto.getProblemId().substring(0, Math.min(4, dto.getProblemId().length())) + "/" + dto.getProblemId() + ".pdf";
+            String problemUrl = dto.getProblemPageUrl();
+
+            if (problemUrl == null || problemUrl.trim().isEmpty() || problemUrl.contains("não encontrada")) {
+                System.err.println("URL inválida ou não encontrada para o problema ID: " + dto.getProblemId() + ". A pular.");
+                continue;
+            }
 
             if (!problemRepository.existsByProblemUrl(problemUrl)) {
                 Problem newProblem = new Problem();
                 newProblem.setTitle(dto.getName());
                 newProblem.setDifficulty(dto.getDifficulty());
-                newProblem.setSource("UVa Online Judge");
+                newProblem.setSource("SPOJ");
                 newProblem.setProblemUrl(problemUrl);
-                // Opcional
-                // newProblem.setSolvedCount(dto.getEstimatedDacu());
 
                 problemRepository.save(newProblem);
             }
@@ -45,11 +48,10 @@ public class IngestionService {
     }
 
     @Transactional
-    public void enrichUvaProblemsWithTags() {
-        List<Problem> untaggedProblems = problemRepository.findProblemsBySourceAndWithoutTopics("UVa Online Judge");
+    public void enrichProblemsBySource(String source) {
+        List<Problem> untaggedProblems = problemRepository.findProblemsBySourceAndWithoutTopics(source);
 
         final int BATCH_SIZE = 10;
-
         for (int i = 0; i < untaggedProblems.size(); i += BATCH_SIZE) {
             List<Problem> batch = untaggedProblems.subList(i, Math.min(i + BATCH_SIZE, untaggedProblems.size()));
 
@@ -57,13 +59,14 @@ public class IngestionService {
 
             try {
                 if (i + BATCH_SIZE < untaggedProblems.size()) {
+                    System.out.println("5 segundos para evitar limite de taxa...");
                     Thread.sleep(5000);
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                System.err.println("Pausa interrompida.");
             }
         }
-        System.out.println("\nEnriquecimento de dados concluído!");
     }
 
     private void processProblemBatch(List<Problem> batch) {
@@ -89,8 +92,9 @@ public class IngestionService {
                 problemCatalogForBatch
         );
 
+        String aiResponseJson = null;
         try {
-            String aiResponseJson = ollamaService.callOllama("gemma3:4b", prompt);
+            aiResponseJson = ollamaService.callOllama("gemma3:4b", prompt);
 
             if (aiResponseJson.trim().startsWith("```json")) {
                 aiResponseJson = aiResponseJson.substring(7, aiResponseJson.length() - 3).trim();
@@ -102,6 +106,7 @@ public class IngestionService {
             for (Problem problem : batch) {
                 List<String> tags = tagsMap.get(String.valueOf(problem.getId()));
                 if (tags != null && !tags.isEmpty()) {
+                    System.out.println("Associando tags " + tags + " ao problema ID " + problem.getId());
                     Set<Topic> topicsForProblem = new HashSet<>();
                     for (String tagName : tags) {
                         Topic topic = topicRepository.findByName(tagName)
@@ -113,10 +118,10 @@ public class IngestionService {
             }
 
             problemRepository.saveAll(batch);
-            System.out.println("Lote salvo com sucesso.");
+            System.out.println("Lote processado e salvo com sucesso.");
 
         } catch (Exception e) {
-            System.err.println("Erro ao processar o lote: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

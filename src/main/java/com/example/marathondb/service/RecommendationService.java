@@ -89,10 +89,10 @@ public class RecommendationService {
                     .limit(5).collect(Collectors.toSet());
         }
 
-        List<Problem> cfCandidates = problemRepository.findRandomUnsolvedProblemsBySource(student.getId(), "Codeforces", 25);
-        List<Problem> uvaCandidates = problemRepository.findRandomUnsolvedProblemsBySource(student.getId(), "UVa Online Judge", 25);
+        List<Problem> cfCandidates = problemRepository.findRandomUnsolvedProblemsBySource(student.getId(), "Codeforces", 15);
+        List<Problem> spojCandidates = problemRepository.findRandomUnsolvedProblemsBySource(student.getId(), "SPOJ", 15);
         List<Problem> candidateProblems = new ArrayList<>(cfCandidates);
-        candidateProblems.addAll(uvaCandidates);
+        candidateProblems.addAll(spojCandidates );
         Collections.shuffle(candidateProblems);
 
         String problemCatalogForAI = candidateProblems.stream()

@@ -18,7 +18,7 @@ public interface ProblemRepository extends JpaRepository<Problem, Long> {
 
     boolean existsByProblemUrl(String problemUrl);
 
-    @Query("SELECT p FROM Problem p WHERE p.source = :source AND p.topics IS EMPTY")
+    @Query("SELECT p FROM Problem p WHERE p.source = :source AND size(p.topics) = 0")
     List<Problem> findProblemsBySourceAndWithoutTopics(@Param("source") String source);
 
     @Query(value = "SELECT * FROM problems p WHERE p.source = :source AND p.id NOT IN " +

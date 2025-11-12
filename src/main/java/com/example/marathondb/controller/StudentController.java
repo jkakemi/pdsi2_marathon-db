@@ -6,7 +6,6 @@ import com.example.marathondb.repository.StudentRepository;
 import com.example.marathondb.service.CodeforcesService;
 import com.example.marathondb.service.StudentService;
 import lombok.RequiredArgsConstructor;
-// Removido o import do @Autowired que não é mais necessário
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
